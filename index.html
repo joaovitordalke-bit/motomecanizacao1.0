@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Motomecanização</title>
+<style>
+:root {
+  --eb-green: #28502b;
+  --eb-dark: #162b18;
+  --eb-olive: #66723b;
+  --gold: #c8a951;
+  --cream: #f3f0e5;
+  --white: #fff;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: var(--cream);
+  color: var(--eb-dark);
+}
+header {
+  background: linear-gradient(135deg, var(--eb-dark), var(--eb-green));
+  color: var(--white);
+  padding: 42px 20px 36px;
+  text-align: center;
+  border-bottom: 5px solid var(--gold);
+}
+.badge {
+  display: inline-block;
+  border: 2px solid var(--gold);
+  padding: 7px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  letter-spacing: 2px;
+  font-weight: bold;
+}
+h1 {
+  margin: 14px 0 6px;
+  font-size: clamp(34px, 7vw, 58px);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.subtitle {
+  margin: 0;
+  opacity: .9;
+  font-size: 16px;
+}
+main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 34px 18px 50px;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 22px;
+}
+.card {
+  background: var(--white);
+  border-radius: 16px;
+  padding: 24px 20px;
+  text-align: center;
+  box-shadow: 0 7px 22px rgba(0,0,0,.10);
+  border-top: 5px solid var(--eb-green);
+}
+.rank {
+  color: var(--eb-olive);
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 1.5px;
+}
+.card h2 {
+  margin: 8px 0 4px;
+  font-size: 24px;
+}
+.phone {
+  margin: 0 0 17px;
+  font-weight: bold;
+  color: #555;
+}
+.qr {
+  width: 190px;
+  height: 190px;
+  max-width: 80%;
+  image-rendering: pixelated;
+  border: 8px solid #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,.12);
+}
+.button {
+  display: block;
+  margin: 18px auto 0;
+  max-width: 210px;
+  padding: 12px 16px;
+  background: var(--eb-green);
+  color: #fff;
+  text-decoration: none;
+  border-radius: 9px;
+  font-weight: bold;
+}
+.button:hover { background: var(--eb-dark); }
+footer {
+  text-align: center;
+  padding: 22px;
+  color: #59604e;
+  font-size: 12px;
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="badge">EXÉRCITO BRASILEIRO</div>
+  <h1>Motomecanização</h1>
+  <p class="subtitle">Contatos da equipe • Aponte a câmera para o QR Code</p>
+</header>
+
+<main>
+  <section class="grid">
+    
+    <article class="card">
+      <div class="rank">CONTATO 1</div>
+      <h2>CB Vieira</h2>
+      <p class="phone">+55 41 98534-2434</p>
+      <img class="qr" src="qr_1.png" alt="QR Code para WhatsApp de CB Vieira">
+      <a class="button" href="https://wa.me/5541985342434" target="_blank" rel="noopener">
+        Abrir WhatsApp
+      </a>
+    </article>
+    
+
+    <article class="card">
+      <div class="rank">CONTATO 2</div>
+      <h2>SD Serapio</h2>
+      <p class="phone">+55 41 98754-3566</p>
+      <img class="qr" src="qr_2.png" alt="QR Code para WhatsApp de SD Serapio">
+      <a class="button" href="https://wa.me/5541987543566" target="_blank" rel="noopener">
+        Abrir WhatsApp
+      </a>
+    </article>
+    
+
+    <article class="card">
+      <div class="rank">CONTATO 3</div>
+      <h2>SD EV Dalke</h2>
+      <p class="phone">+55 41 99663-7354</p>
+      <img class="qr" src="qr_3.png" alt="QR Code para WhatsApp de SD EV Dalke">
+      <a class="button" href="https://wa.me/5541996637354" target="_blank" rel="noopener">
+        Abrir WhatsApp
+      </a>
+    </article>
+    
+
+    <article class="card">
+      <div class="rank">CONTATO 4</div>
+      <h2>SD EV Petriceli</h2>
+      <p class="phone">+55 41 99281-5019</p>
+      <img class="qr" src="qr_4.png" alt="QR Code para WhatsApp de SD EV Petriceli">
+      <a class="button" href="https://wa.me/5541992815019" target="_blank" rel="noopener">
+        Abrir WhatsApp
+      </a>
+    </article>
+    
+  </section>
+</main>
+
+<footer>Motomecanização • Contatos via WhatsApp</footer>
+</body>
+</html>
