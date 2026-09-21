@@ -106,6 +106,114 @@ footer {
   color: #59604e;
   font-size: 12px;
 }
+
+/* Consultas de estoque */
+.stock-area {
+  margin-top: 30px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 22px;
+}
+.stock-card {
+  background: var(--white);
+  border-radius: 16px;
+  padding: 24px 20px;
+  box-shadow: 0 7px 22px rgba(0,0,0,.10);
+  border-top: 5px solid var(--gold);
+  text-align: left;
+}
+.stock-card h2 {
+  margin: 0 0 8px;
+  text-align: center;
+  font-size: 22px;
+}
+.stock-description {
+  text-align: center;
+  color: #59604e;
+  font-size: 13px;
+  margin: 0 0 18px;
+}
+.stock-label {
+  display: block;
+  font-weight: bold;
+  font-size: 13px;
+  margin-bottom: 7px;
+}
+.stock-input {
+  width: 100%;
+  padding: 13px 12px;
+  border: 1px solid #c8cbbf;
+  border-radius: 9px;
+  font-size: 15px;
+  color: var(--eb-dark);
+  background: #fff;
+  outline: none;
+}
+.stock-input:focus {
+  border-color: var(--eb-green);
+  box-shadow: 0 0 0 3px rgba(40,80,43,.12);
+}
+.stock-button {
+  width: 100%;
+  border: 0;
+  cursor: pointer;
+  margin-top: 12px;
+  padding: 12px 16px;
+  background: var(--eb-green);
+  color: #fff;
+  border-radius: 9px;
+  font-weight: bold;
+  font-size: 15px;
+}
+.stock-button:hover { background: var(--eb-dark); }
+.stock-result {
+  margin-top: 14px;
+  padding: 13px;
+  border-radius: 9px;
+  text-align: center;
+  font-weight: bold;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.stock-result.available {
+  background: #e4f1e5;
+  color: #205524;
+  border: 1px solid #9dc3a0;
+}
+.stock-result.unavailable {
+  background: #f8e6e6;
+  color: #8a2424;
+  border: 1px solid #d8a1a1;
+}
+.stock-result.not-found {
+  background: #eee;
+  color: #555;
+  border: 1px solid #ccc;
+}
+.stock-result.loading {
+  background: #f3f0e5;
+  color: #59604e;
+  border: 1px solid #d9d4c2;
+}
+.stock-status {
+  display: block;
+  font-size: 16px;
+}
+.stock-quantity {
+  display: block;
+  margin-top: 4px;
+  font-size: 14px;
+  font-weight: normal;
+}
+.stock-note {
+  margin: 9px 0 0;
+  font-size: 11px;
+  color: #777;
+  text-align: center;
+}
+
 </style>
 </head>
 <body>
@@ -162,8 +270,295 @@ footer {
     </article>
     
   </section>
+
+    <section class="stock-area" aria-label="Consulta de estoque">
+
+      <article class="stock-card">
+        <h2>🔧 Depósito de Peças da Motomecanização</h2>
+        <p class="stock-description">Consulte uma peça e veja a quantidade disponível.</p>
+
+        <label class="stock-label" for="pecaInput">Nome do material</label>
+        <input
+          id="pecaInput"
+          class="stock-input"
+          list="pecasLista"
+          type="text"
+          placeholder="Digite ou selecione o material"
+          autocomplete="off"
+        >
+        <datalist id="pecasLista"></datalist>
+
+        <button class="stock-button" type="button" onclick="consultarEstoque('pecas')">
+          CONSULTAR ESTOQUE
+        </button>
+
+        <div id="pecasResultado" class="stock-result loading">
+          <span class="stock-status">Carregando materiais...</span>
+        </div>
+        <p class="stock-note">Fonte: Depósito de Peças • aba Página1</p>
+      </article>
+
+      <article class="stock-card">
+        <h2>🧰 Filtros Motomecanização</h2>
+        <p class="stock-description">Consulte um filtro e veja a quantidade disponível.</p>
+
+        <label class="stock-label" for="filtroInput">Nome do material</label>
+        <input
+          id="filtroInput"
+          class="stock-input"
+          list="filtrosLista"
+          type="text"
+          placeholder="Digite ou selecione o filtro"
+          autocomplete="off"
+        >
+        <datalist id="filtrosLista"></datalist>
+
+        <button class="stock-button" type="button" onclick="consultarEstoque('filtros')">
+          CONSULTAR ESTOQUE
+        </button>
+
+        <div id="filtrosResultado" class="stock-result loading">
+          <span class="stock-status">Carregando materiais...</span>
+        </div>
+        <p class="stock-note">Fonte: Filtros Motomecanização • aba Filtros</p>
+      </article>
+
+    </section>
+
 </main>
 
 <footer>Motomecanização • Contatos via WhatsApp</footer>
+
+<script>
+const ESTOQUE_CONFIG = {
+  pecas: {
+    id: "pecas",
+    sheetId: "1bsEXtKMawttol37O4mn3FkWCkavc7g3GMzRN4Jgx-Zk",
+    sheetName: "Página1",
+    inputId: "pecaInput",
+    listId: "pecasLista",
+    resultId: "pecasResultado"
+  },
+  filtros: {
+    id: "filtros",
+    sheetId: "16SK8mkMWY1XBukn1HeVJ5YSjMV078wB7cBZ8h2fstl0",
+    sheetName: "Filtros",
+    inputId: "filtroInput",
+    listId: "filtrosLista",
+    resultId: "filtrosResultado"
+  }
+};
+
+const estoqueDados = {
+  pecas: [],
+  filtros: []
+};
+
+function normalizarTexto(valor) {
+  return String(valor ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+function numeroEstoque(valor) {
+  if (typeof valor === "number") return Number.isFinite(valor) ? valor : 0;
+
+  let s = String(valor ?? "").trim();
+  if (!s) return 0;
+
+  // Aceita formatos como 12, 12.5, 12,5 e 1.234,56.
+  s = s.replace(/\s/g, "");
+  if (s.includes(",") && s.includes(".")) {
+    s = s.replace(/\./g, "").replace(",", ".");
+  } else if (s.includes(",")) {
+    s = s.replace(",", ".");
+  }
+
+  const n = Number(s.replace(/[^\d.-]/g, ""));
+  return Number.isFinite(n) ? n : 0;
+}
+
+function formatarQuantidade(qtd) {
+  return Number.isInteger(qtd)
+    ? String(qtd)
+    : qtd.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+}
+
+function localizarColuna(headers, termos) {
+  const normalizados = headers.map(normalizarTexto);
+  for (const termo of termos) {
+    const i = normalizados.findIndex(h => h === normalizarTexto(termo));
+    if (i !== -1) return i;
+  }
+  for (const termo of termos) {
+    const i = normalizados.findIndex(h => h.includes(normalizarTexto(termo)));
+    if (i !== -1) return i;
+  }
+  return -1;
+}
+
+async function carregarPlanilha(tipo) {
+  const cfg = ESTOQUE_CONFIG[tipo];
+  const url =
+    "https://docs.google.com/spreadsheets/d/" +
+    cfg.sheetId +
+    "/gviz/tq?tqx=out:json&sheet=" +
+    encodeURIComponent(cfg.sheetName);
+
+  const response = await fetch(url, { cache: "no-store" });
+  if (!response.ok) throw new Error("Não foi possível acessar a planilha.");
+
+  const texto = await response.text();
+
+  // O Google retorna JSON envolvido por uma função.
+  const inicio = texto.indexOf("{");
+  const fim = texto.lastIndexOf("}");
+  if (inicio === -1 || fim === -1) throw new Error("Resposta inválida da planilha.");
+
+  const dados = JSON.parse(texto.slice(inicio, fim + 1));
+  const tabela = dados.table;
+
+  if (!tabela || !tabela.cols || !tabela.rows) {
+    throw new Error("A planilha não retornou dados.");
+  }
+
+  const headers = tabela.cols.map((col, i) => {
+    const label = col.label || col.id || `Coluna ${i + 1}`;
+    return label.trim();
+  });
+
+  const materialIndex = localizarColuna(headers, [
+    "Material", "Nome", "Nome do Material", "Descrição", "Descricao",
+    "Descrição do Material", "Item", "Peça", "Peca", "Filtro"
+  ]);
+
+  const estoqueIndex = localizarColuna(headers, [
+    "Estoque", "Qtd Estoque", "Quantidade", "Quantidade em Estoque"
+  ]);
+
+  if (materialIndex === -1) {
+    throw new Error("Não encontrei a coluna do nome/material na planilha.");
+  }
+
+  if (estoqueIndex === -1) {
+    throw new Error("Não encontrei a coluna 'Estoque' na planilha.");
+  }
+
+  const registros = tabela.rows
+    .map(row => {
+      const cells = row.c || [];
+      const material = cells[materialIndex]?.v ?? "";
+      const estoque = cells[estoqueIndex]?.v ?? 0;
+
+      return {
+        nome: String(material).trim(),
+        chave: normalizarTexto(material),
+        estoque: numeroEstoque(estoque)
+      };
+    })
+    .filter(item => item.nome);
+
+  estoqueDados[tipo] = registros;
+  preencherLista(tipo);
+  mostrarResultadoInicial(tipo);
+}
+
+function preencherLista(tipo) {
+  const cfg = ESTOQUE_CONFIG[tipo];
+  const lista = document.getElementById(cfg.listId);
+  lista.innerHTML = "";
+
+  const nomes = [...new Set(estoqueDados[tipo].map(item => item.nome))]
+    .sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+  nomes.forEach(nome => {
+    const option = document.createElement("option");
+    option.value = nome;
+    lista.appendChild(option);
+  });
+}
+
+function mostrarResultadoInicial(tipo) {
+  const el = document.getElementById(ESTOQUE_CONFIG[tipo].resultId);
+  el.className = "stock-result loading";
+  el.innerHTML = '<span class="stock-status">Pronto para consultar.</span>';
+}
+
+function consultarEstoque(tipo) {
+  const cfg = ESTOQUE_CONFIG[tipo];
+  const entrada = document.getElementById(cfg.inputId).value;
+  const chave = normalizarTexto(entrada);
+  const resultado = document.getElementById(cfg.resultId);
+
+  if (!chave) {
+    resultado.className = "stock-result not-found";
+    resultado.innerHTML =
+      '<span><span class="stock-status">Digite um material.</span>' +
+      '<span class="stock-quantity">Estoque: 0 unidades</span></span>';
+    return;
+  }
+
+  const encontrados = estoqueDados[tipo].filter(item => item.chave === chave);
+
+  if (encontrados.length === 0) {
+    resultado.className = "stock-result not-found";
+    resultado.innerHTML =
+      '<span><span class="stock-status">MATERIAL NÃO ENCONTRADO</span>' +
+      '<span class="stock-quantity">Estoque: 0 unidades</span></span>';
+    return;
+  }
+
+  // Se o mesmo material aparecer mais de uma vez, soma os estoques.
+  const total = encontrados.reduce((soma, item) => soma + item.estoque, 0);
+
+  if (total > 0) {
+    resultado.className = "stock-result available";
+    resultado.innerHTML =
+      '<span><span class="stock-status">DISPONÍVEL</span>' +
+      '<span class="stock-quantity">Estoque: ' +
+      formatarQuantidade(total) +
+      ' unidades</span></span>';
+  } else {
+    resultado.className = "stock-result unavailable";
+    resultado.innerHTML =
+      '<span><span class="stock-status">INDISPONÍVEL</span>' +
+      '<span class="stock-quantity">Estoque: 0 unidades</span></span>';
+  }
+}
+
+function configurarEnter(tipo) {
+  const input = document.getElementById(ESTOQUE_CONFIG[tipo].inputId);
+  input.addEventListener("keydown", event => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      consultarEstoque(tipo);
+    }
+  });
+}
+
+async function iniciarConsultasEstoque() {
+  configurarEnter("pecas");
+  configurarEnter("filtros");
+
+  for (const tipo of ["pecas", "filtros"]) {
+    const resultado = document.getElementById(ESTOQUE_CONFIG[tipo].resultId);
+    try {
+      await carregarPlanilha(tipo);
+    } catch (erro) {
+      console.error("Erro ao carregar " + tipo + ":", erro);
+      resultado.className = "stock-result unavailable";
+      resultado.innerHTML =
+        '<span><span class="stock-status">ERRO AO CARREGAR ESTOQUE</span>' +
+        '<span class="stock-quantity">Verifique se a planilha está compartilhada para visualização.</span></span>';
+    }
+  }
+}
+
+document.addEventListener("DOMContentLoaded", iniciarConsultasEstoque);
+</script>
+
 </body>
 </html>
