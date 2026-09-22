@@ -403,83 +403,103 @@ function localizarColuna(headers, termos) {
   return -1;
 }
 
+function carregarPlanilhaJSONP(cfg) {
+  return new Promise((resolve, reject) => {
+    const callbackName = "googleSheetCallback_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
+    const script = document.createElement("script");
+    const url = "https://docs.google.com/spreadsheets/d/" + cfg.sheetId +
+      "/gviz/tq?sheet=" + encodeURIComponent(cfg.sheetName) +
+      "&tqx=responseHandler:" + callbackName;
+
+    let finalizado = false;
+    const limpar = () => {
+      if (script.parentNode) script.parentNode.removeChild(script);
+      try { delete window[callbackName]; } catch (_) { window[callbackName] = undefined; }
+    };
+
+    window[callbackName] = (dados) => {
+      if (finalizado) return;
+      finalizado = true;
+      limpar();
+      if (dados && dados.errors && dados.errors.length) {
+        reject(new Error(dados.errors[0].message || "Erro retornado pelo Google Sheets."));
+        return;
+      }
+      if (!dados || !dados.table || !dados.table.cols || !dados.table.rows) {
+        reject(new Error("A aba '" + cfg.sheetName + "' não retornou dados."));
+        return;
+      }
+      resolve(dados);
+    };
+
+    script.onerror = () => {
+      if (finalizado) return;
+      finalizado = true;
+      limpar();
+      reject(new Error("Não foi possível acessar a aba '" + cfg.sheetName + "'."));
+    };
+
+    document.head.appendChild(script);
+    script.src = url;
+  });
+}
+
 async function carregarPlanilha(tipo) {
   const cfg = ESTOQUE_CONFIG[tipo];
-  let url =
-    "https://docs.google.com/spreadsheets/d/" +
-    cfg.sheetId +
-    "/gviz/tq?tqx=out:json" +
-    (cfg.gid ? "&gid=" + encodeURIComponent(cfg.gid) : "&sheet=" + encodeURIComponent(cfg.sheetName));
+  let dados;
 
-  let response = await fetch(url, { cache: "no-store" });
-
-  // Para a aba de Filtros, se o acesso por GID falhar, tenta pelo nome da aba.
-  if (!response.ok && cfg.gid) {
-    url =
-      "https://docs.google.com/spreadsheets/d/" +
+  // Filtros usa JSONP para evitar bloqueios de CORS do navegador.
+  if (tipo === "filtros") {
+    dados = await carregarPlanilhaJSONP(cfg);
+  } else {
+    const url = "https://docs.google.com/spreadsheets/d/" +
       cfg.sheetId +
       "/gviz/tq?tqx=out:json&sheet=" +
       encodeURIComponent(cfg.sheetName);
-    response = await fetch(url, { cache: "no-store" });
+
+    const response = await fetch(url, { cache: "no-store" });
+    if (!response.ok) throw new Error("HTTP " + response.status);
+
+    const texto = await response.text();
+    const inicio = texto.indexOf("{");
+    const fim = texto.lastIndexOf("}");
+    if (inicio === -1 || fim === -1) throw new Error("Resposta inválida da planilha.");
+
+    dados = JSON.parse(texto.slice(inicio, fim + 1));
+    if (dados.errors && dados.errors.length) {
+      throw new Error(dados.errors[0].message || "Erro retornado pelo Google Sheets.");
+    }
   }
 
-  if (!response.ok) throw new Error("Não foi possível acessar a planilha.");
-
-  const texto = await response.text();
-
-  // O Google retorna JSON envolvido por uma função.
-  const inicio = texto.indexOf("{");
-  const fim = texto.lastIndexOf("}");
-  if (inicio === -1 || fim === -1) throw new Error("Resposta inválida da planilha.");
-
-  const dados = JSON.parse(texto.slice(inicio, fim + 1));
   const tabela = dados.table;
+  const headers = tabela.cols.map((col, i) => (col.label || col.id || `Coluna ${i + 1}`).trim());
 
-  if (!tabela || !tabela.cols || !tabela.rows) {
-    throw new Error("A planilha não retornou dados.");
-  }
-
-  const headers = tabela.cols.map((col, i) => {
-    const label = col.label || col.id || `Coluna ${i + 1}`;
-    return label.trim();
-  });
-
-  const materialIndex = localizarColuna(headers, cfg.materialHeaders || [
-    "Material", "Nome", "Nome do Material", "Descrição", "Descricao",
-    "Descrição do Material", "Item", "Peça", "Peca", "Filtro"
-  ]);
-
+  const materialIndex = localizarColuna(headers, cfg.materialHeaders);
   const estoqueIndex = localizarColuna(headers, [
     "Estoque", "Qtd Estoque", "Quantidade", "Quantidade em Estoque"
   ]);
 
   if (materialIndex === -1) {
-    throw new Error("Não encontrei a coluna do nome/material na planilha.");
+    throw new Error("Não encontrei '" + cfg.materialHeaders[0] + "'. Colunas: " + headers.join(", "));
   }
-
   if (estoqueIndex === -1) {
-    throw new Error("Não encontrei a coluna 'Estoque' na planilha.");
+    throw new Error("Não encontrei 'Estoque'. Colunas: " + headers.join(", "));
   }
 
-  const registros = tabela.rows
-    .map(row => {
-      const cells = row.c || [];
-      const material = cells[materialIndex]?.v ?? "";
-      const estoque = cells[estoqueIndex]?.v ?? 0;
+  estoqueDados[tipo] = tabela.rows.map(row => {
+    const cells = row.c || [];
+    const material = cells[materialIndex]?.v ?? "";
+    const estoque = cells[estoqueIndex]?.v ?? 0;
+    return {
+      nome: String(material).trim(),
+      chave: normalizarTexto(material),
+      estoque: numeroEstoque(estoque)
+    };
+  }).filter(item => item.nome);
 
-      return {
-        nome: String(material).trim(),
-        chave: normalizarTexto(material),
-        estoque: numeroEstoque(estoque)
-      };
-    })
-    .filter(item => item.nome);
-
-  estoqueDados[tipo] = registros;
   preencherLista(tipo);
   mostrarResultadoInicial(tipo);
 }
-
 function preencherLista(tipo) {
   const cfg = ESTOQUE_CONFIG[tipo];
   const lista = document.getElementById(cfg.listId);
