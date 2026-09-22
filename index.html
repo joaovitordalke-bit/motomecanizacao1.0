@@ -209,6 +209,8 @@ footer {
 }
 .stock-vehicle {
   display: block;
+  width: 100%;
+  box-sizing: border-box;
   margin-top: 7px;
   padding: 7px 10px;
   background: rgba(40,80,43,.08);
@@ -576,7 +578,9 @@ function consultarEstoque(tipo) {
     return;
   }
 
-  // Soma registros repetidos e separa a quantidade por viatura.
+  // Agrupa por viatura e mostra cada uma em sua própria linha.
+  // Não mostramos o total geral para deixar o resultado exatamente no formato
+  // "Viatura: X — 1 unidade", uma viatura abaixo da outra.
   const porViatura = new Map();
   encontrados.forEach(item => {
     const chaveViatura = item.viatura || "Não informada";
@@ -585,24 +589,23 @@ function consultarEstoque(tipo) {
 
   const total = [...porViatura.values()].reduce((soma, qtd) => soma + qtd, 0);
   const viaturasHtml = [...porViatura.entries()]
-    .map(([viatura, qtd]) =>
-      '<span class="stock-vehicle"><strong>Viatura:</strong> ' +
-      String(viatura).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])) +
-      ' — ' + formatarQuantidade(qtd) + (qtd === 1 ? ' unidade' : ' unidades') + '</span>'
-    ).join('');
+    .map(([viatura, qtd]) => {
+      const nomeSeguro = String(viatura).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+      return '<div class="stock-vehicle"><strong>Viatura:</strong> ' +
+        nomeSeguro + ' — ' + formatarQuantidade(qtd) +
+        (qtd === 1 ? ' unidade' : ' unidades') + '</div>';
+    }).join('');
 
   if (total > 0) {
     resultado.className = "stock-result available";
     resultado.innerHTML =
-      '<span><span class="stock-status">DISPONÍVEL</span>' +
-      '<span class="stock-quantity">Quantidade total: ' +
-      formatarQuantidade(total) +
-      ' unidades</span>' + viaturasHtml + '</span>';
+      '<div style="width:100%"><span class="stock-status">DISPONÍVEL</span>' +
+      viaturasHtml + '</div>';
   } else {
     resultado.className = "stock-result unavailable";
     resultado.innerHTML =
-      '<span><span class="stock-status">INDISPONÍVEL</span>' +
-      '<span class="stock-quantity">Quantidade total: 0 unidades</span>' + viaturasHtml + '</span>';
+      '<div style="width:100%"><span class="stock-status">INDISPONÍVEL</span>' +
+      viaturasHtml + '</div>';
   }
 }
 
