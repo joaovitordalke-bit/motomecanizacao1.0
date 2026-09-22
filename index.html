@@ -338,7 +338,8 @@ const ESTOQUE_CONFIG = {
     inputId: "pecaInput",
     listId: "pecasLista",
     resultId: "pecasResultado",
-    materialHeaders: ["Material", "Nome", "Nome do Material", "Descrição", "Descricao", "Descrição do Material", "Item", "Peça", "Peca"]
+    materialHeaders: ["Material", "Nome", "Nome do Material", "Descrição", "Descricao", "Descrição do Material", "Item", "Peça", "Peca"],
+    viaturaHeaders: ["Viatura"]
   },
   filtros: {
     id: "filtros",
@@ -349,7 +350,8 @@ const ESTOQUE_CONFIG = {
     listId: "filtrosLista",
     resultId: "filtrosResultado",
     materialHeaders: ["Modelo"],
-    quantityHeaders: ["Quant", "quant"]
+    quantityHeaders: ["Quant", "quant"],
+    viaturaHeaders: ["Viatura"]
   }
 };
 
@@ -486,16 +488,32 @@ async function carregarPlanilha(tipo) {
     throw new Error("Não encontrei a coluna de quantidade na planilha. Colunas encontradas: " + headers.join(", "));
   }
 
+  const viaturaIndex = localizarColuna(headers, cfg.viaturaHeaders || ["Viatura"]);
+  if (viaturaIndex === -1) {
+    throw new Error("Não encontrei a coluna de viatura na planilha. Colunas encontradas: " + headers.join(", "));
+  }
+
+  // Nas planilhas, a viatura aparece em células mescladas.
+  // O Google Sheets informa o nome apenas na primeira linha do bloco,
+  // então mantemos a última viatura encontrada para as linhas seguintes.
+  let ultimaViatura = "";
+
   const registros = tabela.rows
     .map(row => {
       const cells = row.c || [];
+      const viaturaValor = cells[viaturaIndex]?.v ?? "";
+      if (String(viaturaValor).trim()) {
+        ultimaViatura = String(viaturaValor).trim();
+      }
+
       const material = cells[materialIndex]?.v ?? "";
       const estoque = cells[estoqueIndex]?.v ?? 0;
 
       return {
         nome: String(material).trim(),
         chave: normalizarTexto(material),
-        estoque: numeroEstoque(estoque)
+        estoque: numeroEstoque(estoque),
+        viatura: ultimaViatura || "Não informada"
       };
     })
     .filter(item => item.nome);
@@ -549,21 +567,33 @@ function consultarEstoque(tipo) {
     return;
   }
 
-  // Se o mesmo material aparecer mais de uma vez, soma os estoques.
-  const total = encontrados.reduce((soma, item) => soma + item.estoque, 0);
+  // Soma registros repetidos e separa a quantidade por viatura.
+  const porViatura = new Map();
+  encontrados.forEach(item => {
+    const chaveViatura = item.viatura || "Não informada";
+    porViatura.set(chaveViatura, (porViatura.get(chaveViatura) || 0) + item.estoque);
+  });
+
+  const total = [...porViatura.values()].reduce((soma, qtd) => soma + qtd, 0);
+  const viaturasHtml = [...porViatura.entries()]
+    .map(([viatura, qtd]) =>
+      '<span class="stock-vehicle">Viatura: <strong>' +
+      String(viatura).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])) +
+      '</strong> — ' + formatarQuantidade(qtd) + ' unidades</span>'
+    ).join('');
 
   if (total > 0) {
     resultado.className = "stock-result available";
     resultado.innerHTML =
       '<span><span class="stock-status">DISPONÍVEL</span>' +
-      '<span class="stock-quantity">Estoque: ' +
+      '<span class="stock-quantity">Quantidade total: ' +
       formatarQuantidade(total) +
-      ' unidades</span></span>';
+      ' unidades</span>' + viaturasHtml + '</span>';
   } else {
     resultado.className = "stock-result unavailable";
     resultado.innerHTML =
       '<span><span class="stock-status">INDISPONÍVEL</span>' +
-      '<span class="stock-quantity">Estoque: 0 unidades</span></span>';
+      '<span class="stock-quantity">Quantidade total: 0 unidades</span>' + viaturasHtml + '</span>';
   }
 }
 
