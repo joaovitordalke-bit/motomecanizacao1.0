@@ -337,15 +337,18 @@ const ESTOQUE_CONFIG = {
     sheetName: "Página1",
     inputId: "pecaInput",
     listId: "pecasLista",
-    resultId: "pecasResultado"
+    resultId: "pecasResultado",
+    materialHeaders: ["Material", "Nome", "Nome do Material", "Descrição", "Descricao", "Descrição do Material", "Item", "Peça", "Peca"]
   },
   filtros: {
     id: "filtros",
     sheetId: "16SK8mkMWY1XBukn1HeVJ5YSjMV078wB7cBZ8h2fstl0",
     sheetName: "Filtros",
+    gid: "0",
     inputId: "filtroInput",
     listId: "filtrosLista",
-    resultId: "filtrosResultado"
+    resultId: "filtrosResultado",
+    materialHeaders: ["Nome de modelo"]
   }
 };
 
@@ -402,13 +405,24 @@ function localizarColuna(headers, termos) {
 
 async function carregarPlanilha(tipo) {
   const cfg = ESTOQUE_CONFIG[tipo];
-  const url =
+  let url =
     "https://docs.google.com/spreadsheets/d/" +
     cfg.sheetId +
-    "/gviz/tq?tqx=out:json&sheet=" +
-    encodeURIComponent(cfg.sheetName);
+    "/gviz/tq?tqx=out:json" +
+    (cfg.gid ? "&gid=" + encodeURIComponent(cfg.gid) : "&sheet=" + encodeURIComponent(cfg.sheetName));
 
-  const response = await fetch(url, { cache: "no-store" });
+  let response = await fetch(url, { cache: "no-store" });
+
+  // Para a aba de Filtros, se o acesso por GID falhar, tenta pelo nome da aba.
+  if (!response.ok && cfg.gid) {
+    url =
+      "https://docs.google.com/spreadsheets/d/" +
+      cfg.sheetId +
+      "/gviz/tq?tqx=out:json&sheet=" +
+      encodeURIComponent(cfg.sheetName);
+    response = await fetch(url, { cache: "no-store" });
+  }
+
   if (!response.ok) throw new Error("Não foi possível acessar a planilha.");
 
   const texto = await response.text();
@@ -430,7 +444,7 @@ async function carregarPlanilha(tipo) {
     return label.trim();
   });
 
-  const materialIndex = localizarColuna(headers, [
+  const materialIndex = localizarColuna(headers, cfg.materialHeaders || [
     "Material", "Nome", "Nome do Material", "Descrição", "Descricao",
     "Descrição do Material", "Item", "Peça", "Peca", "Filtro"
   ]);
