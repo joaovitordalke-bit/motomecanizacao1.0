@@ -302,13 +302,13 @@ footer {
         <h2>🧰 Filtros Motomecanização</h2>
         <p class="stock-description">Consulte um filtro e veja a quantidade disponível.</p>
 
-        <label class="stock-label" for="filtroInput">Nome do material</label>
+        <label class="stock-label" for="filtroInput">Modelo</label>
         <input
           id="filtroInput"
           class="stock-input"
           list="filtrosLista"
           type="text"
-          placeholder="Digite ou selecione o filtro"
+          placeholder="Digite ou selecione o modelo"
           autocomplete="off"
         >
         <datalist id="filtrosLista"></datalist>
@@ -320,7 +320,7 @@ footer {
         <div id="filtrosResultado" class="stock-result loading">
           <span class="stock-status">Carregando materiais...</span>
         </div>
-        <p class="stock-note">Fonte: Filtros Motomecanização • aba Filtros</p>
+        <p class="stock-note">Fonte: Filtros Motomecanização • aba Filtros • pesquisa em Modelo • quantidade em Quant</p>
       </article>
 
     </section>
@@ -342,14 +342,14 @@ const ESTOQUE_CONFIG = {
   },
   filtros: {
     id: "filtros",
-    sheetId: "16SK8mkMWY1XBukn1HeVJ5YSjMV078wB7cBZ8h2fstl0",
+    sheetId: "1siK1PqXNxvh1ei0FgqgngTXXkgFnHz1l5RHTIalN23s",
     sheetName: "Filtros",
     gid: "0",
     inputId: "filtroInput",
     listId: "filtrosLista",
     resultId: "filtrosResultado",
     materialHeaders: ["Modelo"],
-    stockHeaders: ["Quant"]
+    quantityHeaders: ["Quant", "quant"]
   }
 };
 
@@ -474,7 +474,7 @@ async function carregarPlanilha(tipo) {
     "Descrição do Material", "Item", "Peça", "Peca", "Filtro"
   ]);
 
-  const estoqueIndex = localizarColuna(headers, cfg.stockHeaders || [
+  const estoqueIndex = localizarColuna(headers, cfg.quantityHeaders || [
     "Estoque", "Qtd Estoque", "Quantidade", "Quantidade em Estoque"
   ]);
 
@@ -483,7 +483,7 @@ async function carregarPlanilha(tipo) {
   }
 
   if (estoqueIndex === -1) {
-    throw new Error("Não encontrei a coluna 'Estoque' na planilha. Colunas encontradas: " + headers.join(", "));
+    throw new Error("Não encontrei a coluna de quantidade na planilha. Colunas encontradas: " + headers.join(", "));
   }
 
   const registros = tabela.rows
