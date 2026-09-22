@@ -207,6 +207,15 @@ footer {
   font-size: 14px;
   font-weight: normal;
 }
+.stock-vehicle {
+  display: block;
+  margin-top: 7px;
+  padding: 7px 10px;
+  background: rgba(40,80,43,.08);
+  border-radius: 7px;
+  font-size: 14px;
+}
+.stock-vehicle strong { font-weight: 800; }
 .stock-note {
   margin: 9px 0 0;
   font-size: 11px;
@@ -577,9 +586,9 @@ function consultarEstoque(tipo) {
   const total = [...porViatura.values()].reduce((soma, qtd) => soma + qtd, 0);
   const viaturasHtml = [...porViatura.entries()]
     .map(([viatura, qtd]) =>
-      '<span class="stock-vehicle">Viatura: <strong>' +
+      '<span class="stock-vehicle"><strong>Viatura:</strong> ' +
       String(viatura).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])) +
-      '</strong> — ' + formatarQuantidade(qtd) + ' unidades</span>'
+      ' — ' + formatarQuantidade(qtd) + (qtd === 1 ? ' unidade' : ' unidades') + '</span>'
     ).join('');
 
   if (total > 0) {
